@@ -11,7 +11,8 @@ const DELAY_MS = 1000; // (1000 here = 1 second) [tweak to 500 if urgent]
 // (ATTENTION) change the email content buildEmailBody
 
 function sendEmails() {
-  const sheet = SpreadsheetApp.getActiveSpreadsheet().getSheetByName(SHEET_NAME);
+  const sheet =
+    SpreadsheetApp.getActiveSpreadsheet().getSheetByName(SHEET_NAME);
   const data = sheet.getDataRange().getValues();
 
   if (!sheet) {
@@ -23,20 +24,29 @@ function sendEmails() {
   for (let i = 1; i < data.length; i++) {
     const email = data[i][0];
     const name = data[i][1];
+    const gender = data[i][2];
 
     if (!email || !name) {
       Logger.log(`Skipping row ${i + 1} (missing data)`);
       continue;
     }
 
-    const body = buildEmailBody(name);
+    // Determine suffix based on gender
+    let suffix = "";
+    if (gender === "M") {
+      suffix = "Sir";
+    } else if (gender === "F") {
+      suffix = "Ma'am"; // Escaping single quote not needed in double quotes, but good to be careful
+    }
+
+    const body = buildEmailBody(name, suffix);
 
     if (DRY_RUN) {
-      Logger.log(`[DRY-RUN] Would send to ${email}`);
+      Logger.log(`[DRY-RUN] Would send to ${email} (Hi ${name} ${suffix})`);
     } else {
       GmailApp.sendEmail(email, SUBJECT, "HTML only", {
         htmlBody: body,
-        attachments: attachments
+        attachments: attachments,
       });
       Logger.log(`[SENT] ${email}`);
     }
@@ -47,9 +57,10 @@ function sendEmails() {
   Logger.log("✅ All emails processed");
 }
 
-function buildEmailBody(name) {
+function buildEmailBody(name, suffix) {
+  const salutation = suffix ? `${name} ${suffix}` : name;
   return `
-    <p>Hi ${name},</p>
+    <p>Hi ${salutation},</p>
 
     <p>
       I hope this email finds you well. I wanted to reach out and share
